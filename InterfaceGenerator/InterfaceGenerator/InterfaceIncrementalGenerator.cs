@@ -296,8 +296,8 @@ namespace {Namespace}
                 if (method.TypeParameters.Length > 0)
                 {
                     typeParameters = $"<{string.Join(", ", method.TypeParameters.Select(tp => tp.Name))}>";
-                    
-                    var typeConstraints = method.TypeParameters
+
+                    IEnumerable<string> typeConstraints = method.TypeParameters
                         .Select(tp => GetTypeParameterConstraints(tp))
                         .Where(c => !string.IsNullOrEmpty(c));
 
@@ -403,7 +403,21 @@ namespace {Namespace}
 
         if (typeSymbol is IArrayTypeSymbol arrayType)
         {
-            return $"{GetGlobalType(semanticModel, arrayType.ElementType, className)}[]";
+            string elementType = GetGlobalType(semanticModel, arrayType.ElementType, className);
+            if (arrayType.Rank == 1)
+            {
+                return $"{elementType}[]";
+            }
+
+            return $"{elementType}[{new string(',', arrayType.Rank - 1)}]";
+        }
+
+        if (typeSymbol is INamedTypeSymbol { IsTupleType: true } tupleType)
+        {
+            string tupleElements = string.Join(", ",
+                tupleType.TupleElements.Select(e =>
+                    GetGlobalType(semanticModel, e.Type, className)));
+            return $"({tupleElements})";
         }
 
         if (typeSymbol is INamedTypeSymbol { IsGenericType: true } genericType)
@@ -462,10 +476,15 @@ namespace {Namespace}
             SpecialType.System_UInt64  => "ulong",
             _                          => $"global::{typeSymbol.ContainingNamespace}.{typeSymbol.Name}"
         };
-
+        
         if (typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
         {
-            globalType += "?";
+            // Only add ? for reference types and value types that aren't already Nullable<T>
+            bool isAlreadyNullable = typeSymbol is INamedTypeSymbol { ConstructedFrom.SpecialType: SpecialType.System_Nullable_T };
+            if (!isAlreadyNullable)
+            {
+                globalType += "?";
+            }
         }
 
         return globalType;
