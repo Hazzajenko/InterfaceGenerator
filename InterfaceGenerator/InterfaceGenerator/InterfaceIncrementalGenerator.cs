@@ -160,6 +160,7 @@ namespace {Namespace}
                 ? attributeData.ConstructorArguments[0].Value?.ToString()
                 : null;
 
+            // ! TODO implement nested types
             List<INamedTypeSymbol> typeChain = [classSymbol];
 
             if (!string.IsNullOrEmpty(baseTypeName))

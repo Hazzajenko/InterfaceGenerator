@@ -2,7 +2,6 @@
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
-using InterfaceGenerator.Tests.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -184,8 +183,6 @@ public static class TestHelper
 
         driver = driver.RunGenerators(compilation);
 
-        CSharpCompilation outputCompilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(expected));
-
         // Run the generator and get the output
         driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation updatedCompilation, out ImmutableArray<Diagnostic> diagnostics);
 
@@ -194,15 +191,13 @@ public static class TestHelper
             .Where(t => t != syntaxTree)
             .ToArray();
 
-        // Assert.Single(newSources);
-        // Assert contains 2 sources
+
         Assert.Equal(2, newSources.Length);
-        SyntaxTree? nonAttributeSource = newSources.Where(s => !s.FilePath.Contains("GenerateInterfaceAttributes")).FirstOrDefault();
+        SyntaxTree? nonAttributeSource = newSources.FirstOrDefault(s => !s.FilePath.Contains("GenerateInterfaceAttributes"));
         Assert.NotNull(nonAttributeSource);
         string generatedSource = nonAttributeSource.ToString();
-        // string generatedSource = newSources[0].ToString();
-
         // Compare with expected
+
         Assert.Equal(expected.ReplaceLineEndings(), generatedSource.ReplaceLineEndings());
 
         return Task.CompletedTask;
