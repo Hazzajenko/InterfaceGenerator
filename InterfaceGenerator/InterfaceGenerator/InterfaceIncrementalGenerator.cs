@@ -404,6 +404,12 @@ namespace {Namespace}
             return typeParameter.Name;
         }
 
+        // ! TODO this is a hack to handle ISyncEvent in ArenaEntityBase
+        if (typeSymbol.Name == "ISyncEvent" && typeSymbol.ContainingNamespace.IsGlobalNamespace)
+        {
+            return "global::sliced.Entities.ArenaEntityBase.ISyncEvent";
+        }
+
         if (typeSymbol is IArrayTypeSymbol arrayType)
         {
             string elementType = GetGlobalType(semanticModel, arrayType.ElementType, className);
