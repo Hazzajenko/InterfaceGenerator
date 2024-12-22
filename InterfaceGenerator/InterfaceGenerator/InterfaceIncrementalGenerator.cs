@@ -203,7 +203,25 @@ namespace {Namespace}
         sourceBuilder.AppendLine($"namespace {GetNamespace(typeDeclaration)};");
         sourceBuilder.AppendLine();
         sourceBuilder.AppendLine("#nullable enable");
-        sourceBuilder.AppendLine($"{accessibility} partial interface I{className}");
+
+        string genericParameters = "";
+        if (classSymbol.TypeParameters.Length > 0)
+        {
+            genericParameters = $"<{string.Join(", ", classSymbol.TypeParameters.Select(tp => tp.Name))}>";
+        }
+
+        sourceBuilder.AppendLine($"{accessibility} partial interface I{className}{genericParameters}");
+
+        // Add type parameter constraints if any
+        foreach (ITypeParameterSymbol typeParam in classSymbol.TypeParameters)
+        {
+            string constraints = GetTypeParameterConstraints(typeParam);
+            if (!string.IsNullOrEmpty(constraints))
+            {
+                sourceBuilder.AppendLine($"    {constraints}");
+            }
+        }
+
         sourceBuilder.AppendLine("{");
 
         HashSet<string> processedMembers = [];
@@ -272,6 +290,23 @@ namespace {Namespace}
             }
             else if (member is IMethodSymbol method)
             {
+                string typeParameters = "";
+                string constraints = "";
+
+                if (method.TypeParameters.Length > 0)
+                {
+                    typeParameters = $"<{string.Join(", ", method.TypeParameters.Select(tp => tp.Name))}>";
+                    
+                    var typeConstraints = method.TypeParameters
+                        .Select(tp => GetTypeParameterConstraints(tp))
+                        .Where(c => !string.IsNullOrEmpty(c));
+
+                    if (typeConstraints.Any())
+                    {
+                        constraints = " " + string.Join(" ", typeConstraints);
+                    }
+                }
+
                 string returnType = GetGlobalType(semanticModel, method.ReturnType, className);
                 string parameters = string.Join(", ",
                     method.Parameters.Select(p =>
@@ -305,11 +340,53 @@ namespace {Namespace}
 
                         return $"{attributeStr}{modifiers} {paramType} {paramName}{defaultValue}".Trim();
                     }));
-                sourceBuilder.AppendLine($"    {returnType} {method.Name}({parameters});");
+
+                sourceBuilder.AppendLine($"    {returnType} {method.Name}{typeParameters}({parameters}){constraints};");
             }
         }
 
         sourceBuilder.AppendLine("}");
+    }
+
+    private static string GetTypeParameterConstraints(ITypeParameterSymbol typeParameter)
+    {
+        List<string> constraints = [];
+
+        if (typeParameter.HasReferenceTypeConstraint)
+        {
+            constraints.Add("class");
+        }
+        else if (typeParameter.HasValueTypeConstraint)
+        {
+            constraints.Add("struct");
+        }
+
+        if (typeParameter.HasNotNullConstraint)
+        {
+            constraints.Add("notnull");
+        }
+
+        if (typeParameter.HasUnmanagedTypeConstraint)
+        {
+            constraints.Add("unmanaged");
+        }
+
+        foreach (ITypeSymbol constraintType in typeParameter.ConstraintTypes)
+        {
+            constraints.Add(constraintType.ToDisplayString());
+        }
+
+        if (typeParameter.HasConstructorConstraint)
+        {
+            constraints.Add("new()");
+        }
+
+        if (constraints.Count == 0)
+        {
+            return "";
+        }
+
+        return $"where {typeParameter.Name} : {string.Join(", ", constraints)}";
     }
 
     private static string GetSafeParameterName(string paramName)
@@ -319,6 +396,11 @@ namespace {Namespace}
 
     private static string GetGlobalType(SemanticModel semanticModel, ITypeSymbol typeSymbol, string className)
     {
+        if (typeSymbol is ITypeParameterSymbol typeParameter)
+        {
+            return typeParameter.Name;
+        }
+
         if (typeSymbol is IArrayTypeSymbol arrayType)
         {
             return $"{GetGlobalType(semanticModel, arrayType.ElementType, className)}[]";
