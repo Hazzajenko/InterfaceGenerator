@@ -412,11 +412,23 @@ namespace {Namespace}
             return $"{elementType}[{new string(',', arrayType.Rank - 1)}]";
         }
 
+        // if (typeSymbol is INamedTypeSymbol { IsTupleType: true } tupleType)
+        // {
+        //     string tupleElements = string.Join(", ",
+        //         tupleType.TupleElements.Select(e =>
+        //             GetGlobalType(semanticModel, e.Type, className)));
+        //     return $"({tupleElements})";
+        // }
         if (typeSymbol is INamedTypeSymbol { IsTupleType: true } tupleType)
         {
             string tupleElements = string.Join(", ",
                 tupleType.TupleElements.Select(e =>
-                    GetGlobalType(semanticModel, e.Type, className)));
+                {
+                    string elementType = GetGlobalType(semanticModel, e.Type, className);
+                    return string.IsNullOrEmpty(e.Name)
+                        ? elementType
+                        : $"{elementType} {e.Name}";
+                }));
             return $"({tupleElements})";
         }
 
@@ -432,11 +444,6 @@ namespace {Namespace}
             string baseName = genericType.ConstructedFrom.ToDisplayString(new SymbolDisplayFormat(
                 typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
                 genericsOptions: SymbolDisplayGenericsOptions.None));
-
-            if (typeArgs.Contains("ISyncEvent") && className == "ArenaEntityBase")
-            {
-                typeArgs = "sliced.Entities.ArenaEntityBase.ISyncEvent";
-            }
 
             return $"global::{baseName}<{typeArgs}>";
         }
@@ -476,7 +483,7 @@ namespace {Namespace}
             SpecialType.System_UInt64  => "ulong",
             _                          => $"global::{typeSymbol.ContainingNamespace}.{typeSymbol.Name}"
         };
-        
+
         if (typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
         {
             // Only add ? for reference types and value types that aren't already Nullable<T>

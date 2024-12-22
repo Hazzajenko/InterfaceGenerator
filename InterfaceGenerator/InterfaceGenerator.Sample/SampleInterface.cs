@@ -13,7 +13,13 @@ public class SampleInterface : ISampleInterface
     // Basic property cases
     public string Property { get; set; }
     public int ReadOnlyProperty { get; }
-    public double WriteOnlyProperty { set; }
+    private double _writeOnlyProperty;
+
+    public double WriteOnlyProperty
+    {
+        set => _writeOnlyProperty = value;
+    }
+
     public List<string> GenericProperty { get; set; }
     public Dictionary<int, List<string>> ComplexGenericProperty { get; set; }
     public string? NullableProperty { get; set; }
@@ -89,7 +95,7 @@ public class SampleInterface : ISampleInterface
 
     public T MethodWithGenericAndReturnValue<T>()
     {
-        return default!;
+        return default(T)!;
     }
 
     public T MethodWithGenericAndReturnValueAndParameters<T>(T parameter1, int parameter2)
@@ -108,7 +114,7 @@ public class SampleInterface : ISampleInterface
 
     public T MethodWithGenericAndGenericAndReturnValue<T, TU>()
     {
-        return default!;
+        return default(T)!;
     }
 
     public (T Item1, TU Item2) MethodWithMultipleGenericsAndTupleReturn<T, TU>()
@@ -146,7 +152,7 @@ public class SampleInterface : ISampleInterface
     // Nested type scenarios
     public NestedClass.InnerType MethodWithNestedType()
     {
-        return default!;
+        return default(NestedClass.InnerType)!;
     }
 
     public void MethodWithNestedGeneric(NestedClass.InnerGeneric<int> param)
