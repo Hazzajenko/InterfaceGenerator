@@ -1,9 +1,9 @@
-﻿{
-  "$schema": "https://json.schemastore.org/launchsettings.json",
+{
   "profiles": {
     "DebugRoslynSourceGenerator": {
       "commandName": "DebugRoslynComponent",
       "targetProject": "D:/sliced/src/godot/sliced.csproj"
     }
-  }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json"
 }

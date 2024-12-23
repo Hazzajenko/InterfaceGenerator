@@ -14,7 +14,7 @@ public class InterfaceGeneratorTests
     public Task GeneratesInterfaceForSimpleClass()
     {
         const string source = @"
-using Generators;
+using InterfaceGenerator.Attributes;
 
 namespace TestNamespace;
 
@@ -44,8 +44,7 @@ public partial interface ISimpleClass
     [Fact]
     public Task GeneratesInterfaceWithMethods()
     {
-        const string source = @"
-using Generators;
+        const string source = @"using InterfaceGenerator.Attributes;
 
 namespace TestNamespace;
 
@@ -74,8 +73,7 @@ public partial interface IClassWithMethods
     [Fact]
     public Task GeneratesInterfaceForGenericClass()
     {
-        const string source = @"
-using Generators;
+        const string source = @"using InterfaceGenerator.Attributes;
 using System.Collections.Generic;
 
 namespace TestNamespace;
@@ -105,8 +103,7 @@ public partial interface IGenericClass<T>
     [Fact]
     public Task GeneratesInterfaceWithNullableReferences()
     {
-        const string source = @"
-using Generators;
+        const string source = @"using InterfaceGenerator.Attributes;
 
 namespace TestNamespace;
 
@@ -136,8 +133,7 @@ public partial interface INullableClass
     [Fact]
     public Task GeneratesInterfaceWithIgnoredMembers()
     {
-        const string source = @"
-using Generators;
+        const string source = @"using InterfaceGenerator.Attributes;
 
 namespace TestNamespace;
 
