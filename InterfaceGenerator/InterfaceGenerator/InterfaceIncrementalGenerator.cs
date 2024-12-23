@@ -1,14 +1,18 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using GeneratorLogger;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace InterfaceGenerator;
 
+#pragma warning disable RS1038
 [Generator(LanguageNames.CSharp)]
+#pragma warning restore RS1038
 public class InterfaceIncrementalGenerator : IIncrementalGenerator
 {
     private const string Namespace = "Generators";
@@ -98,13 +102,52 @@ namespace {Namespace}
                 static (ctx, _) => GetTypeForGeneration(ctx))
             .Where(static m => m is not null)!;
 
+        // GeneratorLogging.LogMessage("[+] Set up syntax provider for type declarations");
+
         IncrementalValueProvider<(Compilation Compilation, ImmutableArray<TypeDeclarationSyntax> Types)> compilationAndTypes =
             context.CompilationProvider.Combine(typeDeclarations.Collect());
 
         context.RegisterSourceOutput(compilationAndTypes, static (spc, source) => Execute(source.Compilation, source.Types, spc));
+
+        // GeneratorLogging.LogMessage("[+] Registered source output generation");
     }
 
     private static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is TypeDeclarationSyntax { AttributeLists.Count: > 0 };
+    // private static bool IsSyntaxTargetForGeneration(SyntaxNode node)
+    // {
+    //     bool isTarget = node is TypeDeclarationSyntax { AttributeLists.Count: > 0 };
+    //     // if (isTarget)
+    //     // {
+    //     //     // GeneratorLogging.LogMessage($"[+] Found potential target type: {((TypeDeclarationSyntax)node).Identifier.Text}");
+    //     // }
+    //
+    //     return isTarget;
+    // }
+
+    // private static TypeDeclarationSyntax? GetTypeForGeneration(GeneratorSyntaxContext context)
+    // {
+    //     TypeDeclarationSyntax typeDeclaration = (TypeDeclarationSyntax)context.Node;
+    //     foreach (AttributeListSyntax attributeList in typeDeclaration.AttributeLists)
+    //     {
+    //         foreach (AttributeSyntax attribute in attributeList.Attributes)
+    //         {
+    //             if (context.SemanticModel.GetSymbolInfo(attribute).Symbol is not IMethodSymbol attributeSymbol)
+    //             {
+    //                 continue;
+    //             }
+    //
+    //             INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+    //             string fullName = attributeContainingTypeSymbol.ToDisplayString();
+    //
+    //             if (fullName == $"{Namespace}.{GenerateInterfaceAttributeName}")
+    //             {
+    //                 return typeDeclaration;
+    //             }
+    //         }
+    //     }
+    //
+    //     return null;
+    // }
 
     private static TypeDeclarationSyntax? GetTypeForGeneration(GeneratorSyntaxContext context)
     {
@@ -123,6 +166,7 @@ namespace {Namespace}
 
                 if (fullName == $"{Namespace}.{GenerateInterfaceAttributeName}")
                 {
+                    // GeneratorLogging.LogMessage($"[+] Validated type {typeDeclaration.Identifier.Text} for interface generation");
                     return typeDeclaration;
                 }
             }
@@ -133,227 +177,259 @@ namespace {Namespace}
 
     private static void Execute(Compilation compilation, ImmutableArray<TypeDeclarationSyntax> types, SourceProductionContext context)
     {
-        if (types.IsDefaultOrEmpty)
+        try
         {
-            return;
-        }
+             GeneratorLogging.SetLogFilePath(@"E:\projects\c#\InterfaceGenerator\InterfaceGenerator\InterfaceGenerator\log.txt");
+             GeneratorLogging.LogMessage("[+] Initializing Interface Generator");
 
-        foreach (TypeDeclarationSyntax? typeDeclaration in types)
-        {
-            SemanticModel semanticModel = compilation.GetSemanticModel(typeDeclaration.SyntaxTree);
-            ISymbol? symbol = semanticModel.GetDeclaredSymbol(typeDeclaration);
-
-            if (symbol is not INamedTypeSymbol classSymbol)
+            if (types.IsDefaultOrEmpty)
             {
-                continue;
+                // GeneratorLogging.LogMessage("[!] No types found for generation", LoggingLevel.Warning);
+                return;
             }
 
-            AttributeData? attributeData = classSymbol.GetAttributes()
-                .FirstOrDefault(ad => ad.AttributeClass?.Name == GenerateInterfaceAttributeName);
+            // GeneratorLogging.LogMessage($"[+] Beginning execution for {types.Length} types");
 
-            if (attributeData == null)
+            foreach (TypeDeclarationSyntax? typeDeclaration in types)
             {
-                continue;
-            }
+                SemanticModel semanticModel = compilation.GetSemanticModel(typeDeclaration.SyntaxTree);
+                ISymbol? symbol = semanticModel.GetDeclaredSymbol(typeDeclaration);
 
-            string? baseTypeName = attributeData.ConstructorArguments.Length > 0
-                ? attributeData.ConstructorArguments[0].Value?.ToString()
-                : null;
-
-            // ! TODO implement nested types
-            List<INamedTypeSymbol> typeChain = [classSymbol];
-
-            if (!string.IsNullOrEmpty(baseTypeName))
-            {
-                INamedTypeSymbol? currentType = classSymbol.BaseType;
-                bool foundTargetType = false;
-
-                while (currentType != null)
+                if (symbol is not INamedTypeSymbol classSymbol)
                 {
-                    typeChain.Add(currentType);
-                    if (currentType.Name == baseTypeName)
-                    {
-                        foundTargetType = true;
-                        break;
-                    }
-
-                    currentType = currentType.BaseType;
-                }
-
-                if (!foundTargetType)
-                {
+                    // GeneratorLogging.LogMessage($"[-] Could not get symbol for type {typeDeclaration.Identifier.Text}", LoggingLevel.Error);
                     continue;
                 }
+
+                AttributeData? attributeData = classSymbol.GetAttributes()
+                    .FirstOrDefault(ad => ad.AttributeClass?.Name == GenerateInterfaceAttributeName);
+
+                if (attributeData == null)
+                {
+                    // GeneratorLogging.LogMessage($"[-] Could not find GenerateInterfaceAttribute for type {typeDeclaration.Identifier.Text}", LoggingLevel.Error);
+                    continue;
+                }
+
+                // GeneratorLogging.LogMessage($"[+] Processing type {typeDeclaration.Identifier.Text}");
+
+                string? baseTypeName = attributeData.ConstructorArguments.Length > 0
+                    ? attributeData.ConstructorArguments[0].Value?.ToString()
+                    : null;
+
+                // ! TODO implement nested types
+                List<INamedTypeSymbol> typeChain = new();
+
+                if (!string.IsNullOrEmpty(baseTypeName))
+                {
+                    // GeneratorLogging.LogMessage($"[+] Looking for base type {baseTypeName}");
+                    INamedTypeSymbol? currentType = classSymbol.BaseType;
+                    bool foundTargetType = false;
+
+                    while (currentType != null)
+                    {
+                        typeChain.Add(currentType);
+                        if (currentType.Name == baseTypeName)
+                        {
+                            foundTargetType = true;
+                            // GeneratorLogging.LogMessage($"[+] Found base type {baseTypeName}");
+                            break;
+                        }
+
+                        currentType = currentType.BaseType;
+                    }
+
+                    if (!foundTargetType)
+                    {
+                        // GeneratorLogging.LogMessage($"[-] Could not find base type {baseTypeName}", LoggingLevel.Error);
+                        continue;
+                    }
+                }
+
+                StringBuilder sourceBuilder = new();
+                GenerateInterface(typeDeclaration, sourceBuilder, classSymbol, semanticModel);
+
+                string typeName = typeDeclaration.Identifier.Text;
+                SourceText sourceText = SourceText.From(sourceBuilder.ToString(), Encoding.UTF8);
+                context.AddSource($"I{typeName}.g.cs", sourceText);
+                // GeneratorLogging.LogMessage($"[+] Generated interface for {typeName}");
             }
-
-            StringBuilder sourceBuilder = new();
-            GenerateInterface(typeDeclaration, sourceBuilder, classSymbol, semanticModel);
-
-            string typeName = typeDeclaration.Identifier.Text;
-            SourceText sourceText = SourceText.From(sourceBuilder.ToString(), Encoding.UTF8);
-            context.AddSource($"I{typeName}.g.cs", sourceText);
+        }
+        catch (Exception e)
+        {
+             GeneratorLogging.LogMessage($"[-] Error in Execute: {e.Message}", LoggingLevel.Error);
+            throw;
         }
     }
 
     private static void GenerateInterface(TypeDeclarationSyntax typeDeclaration, StringBuilder sourceBuilder, INamedTypeSymbol classSymbol, SemanticModel semanticModel)
     {
-        string accessibility = classSymbol.DeclaredAccessibility == Accessibility.Public
-            ? "public"
-            : "internal";
-        string className = typeDeclaration.Identifier.Text;
-        sourceBuilder.AppendLine("// <auto-generated/>");
-        sourceBuilder.AppendLine();
-        sourceBuilder.AppendLine($"namespace {GetNamespace(typeDeclaration)};");
-        sourceBuilder.AppendLine();
-        sourceBuilder.AppendLine("#nullable enable");
-
-        string genericParameters = "";
-        if (classSymbol.TypeParameters.Length > 0)
+        try
         {
-            genericParameters = $"<{string.Join(", ", classSymbol.TypeParameters.Select(tp => tp.Name))}>";
-        }
+            // GeneratorLogging.LogMessage($"[+] Generating interface for {typeDeclaration.Identifier.Text}");
 
-        sourceBuilder.AppendLine($"{accessibility} partial interface I{className}{genericParameters}");
+            string accessibility = classSymbol.DeclaredAccessibility == Accessibility.Public
+                ? "public"
+                : "internal";
+            string className = typeDeclaration.Identifier.Text;
+            sourceBuilder.AppendLine("// <auto-generated/>");
+            sourceBuilder.AppendLine();
+            sourceBuilder.AppendLine($"namespace {GetNamespace(typeDeclaration)};");
+            sourceBuilder.AppendLine();
+            sourceBuilder.AppendLine("#nullable enable");
 
-        // Add type parameter constraints if any
-        foreach (ITypeParameterSymbol typeParam in classSymbol.TypeParameters)
-        {
-            string constraints = GetTypeParameterConstraints(typeParam);
-            if (!string.IsNullOrEmpty(constraints))
+            string genericParameters = "";
+            if (classSymbol.TypeParameters.Length > 0)
             {
-                sourceBuilder.AppendLine($"    {constraints}");
-            }
-        }
-
-        sourceBuilder.AppendLine("{");
-
-        HashSet<string> processedMembers = [];
-
-        foreach (ISymbol member in classSymbol.GetMembers())
-        {
-            if (member.GetAttributes().Any(ad => ad.AttributeClass?.Name == "GenerateInterfaceAttribute"))
-            {
-                continue;
+                genericParameters = $"<{string.Join(", ", classSymbol.TypeParameters.Select(tp => tp.Name))}>";
             }
 
-            if (member.IsImplicitlyDeclared    ||
-                member.Name.StartsWith("get_") ||
-                member.Name.StartsWith("set_") ||
-                member.Name.StartsWith("add_") ||
-                member.Name.StartsWith("remove_"))
-            {
-                continue;
-            }
+            sourceBuilder.AppendLine($"{accessibility} partial interface I{className}{genericParameters}");
 
-            if (member.IsStatic)
+            // Add type parameter constraints if any
+            foreach (ITypeParameterSymbol typeParam in classSymbol.TypeParameters)
             {
-                continue;
-            }
-
-            if (member.DeclaredAccessibility != Accessibility.Public)
-            {
-                if (member is IPropertySymbol property)
+                string constraints = GetTypeParameterConstraints(typeParam);
+                if (!string.IsNullOrEmpty(constraints))
                 {
-                    if ((property.GetMethod == null || property.GetMethod.DeclaredAccessibility != Accessibility.Public) &&
-                        (property.SetMethod == null || property.SetMethod.DeclaredAccessibility != Accessibility.Public))
+                    sourceBuilder.AppendLine($"    {constraints}");
+                }
+            }
+
+            sourceBuilder.AppendLine("{");
+
+            HashSet<string> processedMembers = new();
+
+            foreach (ISymbol member in classSymbol.GetMembers())
+            {
+                if (member.GetAttributes().Any(ad => ad.AttributeClass?.Name == "GenerateInterfaceAttribute"))
+                {
+                    continue;
+                }
+
+                if (member.IsImplicitlyDeclared    ||
+                    member.Name.StartsWith("get_") ||
+                    member.Name.StartsWith("set_") ||
+                    member.Name.StartsWith("add_") ||
+                    member.Name.StartsWith("remove_"))
+                {
+                    continue;
+                }
+
+                if (member.IsStatic)
+                {
+                    continue;
+                }
+
+                if (member.DeclaredAccessibility != Accessibility.Public)
+                {
+                    if (member is IPropertySymbol property)
+                    {
+                        if ((property.GetMethod == null || property.GetMethod.DeclaredAccessibility != Accessibility.Public) &&
+                            (property.SetMethod == null || property.SetMethod.DeclaredAccessibility != Accessibility.Public))
+                        {
+                            continue;
+                        }
+                    }
+                    else
                     {
                         continue;
                     }
                 }
-                else
+
+                string memberSignature = GetMemberSignature(member);
+                if (!processedMembers.Add(memberSignature))
                 {
                     continue;
                 }
-            }
 
-            string memberSignature = GetMemberSignature(member);
-            if (!processedMembers.Add(memberSignature))
-            {
-                continue;
-            }
-
-            if (member is IPropertySymbol property2)
-            {
-                string typeWithGlobal = GetGlobalType(semanticModel, property2.Type, className);
-                bool hasPublicGetter = property2.GetMethod?.DeclaredAccessibility == Accessibility.Public;
-                bool hasPublicSetter = property2.SetMethod?.DeclaredAccessibility == Accessibility.Public;
-
-                string accessors = "";
-                if (hasPublicGetter)
+                if (member is IPropertySymbol property2)
                 {
-                    accessors += "get; ";
-                }
+                    string typeWithGlobal = GetGlobalType(semanticModel, property2.Type, className);
+                    bool hasPublicGetter = property2.GetMethod?.DeclaredAccessibility == Accessibility.Public;
+                    bool hasPublicSetter = property2.SetMethod?.DeclaredAccessibility == Accessibility.Public;
 
-                if (hasPublicSetter)
-                {
-                    accessors += "set; ";
-                }
-
-                sourceBuilder.AppendLine($"    {typeWithGlobal} {property2.Name} {{ {accessors}}}");
-            }
-            else if (member is IMethodSymbol method)
-            {
-                string typeParameters = "";
-                string constraints = "";
-
-                if (method.TypeParameters.Length > 0)
-                {
-                    typeParameters = $"<{string.Join(", ", method.TypeParameters.Select(tp => tp.Name))}>";
-
-                    IEnumerable<string> typeConstraints = method.TypeParameters
-                        .Select(GetTypeParameterConstraints)
-                        .Where(c => !string.IsNullOrEmpty(c));
-
-                    if (typeConstraints.Any())
+                    string accessors = "";
+                    if (hasPublicGetter)
                     {
-                        constraints = " " + string.Join(" ", typeConstraints);
+                        accessors += "get; ";
                     }
-                }
 
-                string returnType = GetGlobalType(semanticModel, method.ReturnType, className);
-                string parameters = string.Join(", ",
-                    method.Parameters.Select(p =>
+                    if (hasPublicSetter)
                     {
-                        string paramType = GetGlobalType(semanticModel, p.Type, className);
-                        string paramName = GetSafeParameterName(p.Name);
+                        accessors += "set; ";
+                    }
 
-                        ImmutableArray<AttributeData> attributes = p.GetAttributes();
-                        AttributeData? maybeNullWhenAttr = attributes.FirstOrDefault(a =>
-                            a.AttributeClass?.Name is "MaybeNullWhenAttribute" or "MaybeNullWhen");
+                    sourceBuilder.AppendLine($"    {typeWithGlobal} {property2.Name} {{ {accessors}}}");
+                }
+                else if (member is IMethodSymbol method)
+                {
+                    string typeParameters = "";
+                    string constraints = "";
 
-                        string attributeStr = "";
-                        if (maybeNullWhenAttr != null)
+                    if (method.TypeParameters.Length > 0)
+                    {
+                        typeParameters = $"<{string.Join(", ", method.TypeParameters.Select(tp => tp.Name))}>";
+
+                        IEnumerable<string> typeConstraints = method.TypeParameters
+                            .Select(GetTypeParameterConstraints)
+                            .Where(c => !string.IsNullOrEmpty(c));
+
+                        if (typeConstraints.Any())
                         {
-                            object? value = maybeNullWhenAttr.ConstructorArguments.FirstOrDefault().Value;
-                            string valueStr = value?.ToString().ToLower() ?? "false";
-                            attributeStr = $"[global::System.Diagnostics.CodeAnalysis.MaybeNullWhen({valueStr})] ";
+                            constraints = " " + string.Join(" ", typeConstraints);
                         }
+                    }
 
-                        string defaultValue = p.HasExplicitDefaultValue
-                            ? $" = {p.ExplicitDefaultValue}"
-                            : "";
-
-                        string modifiers = p.RefKind switch
+                    string returnType = GetGlobalType(semanticModel, method.ReturnType, className);
+                    string parameters = string.Join(", ",
+                        method.Parameters.Select(p =>
                         {
-                            RefKind.Out => "out",
-                            RefKind.Ref => "ref",
-                            RefKind.In  => "in",
-                            _           => ""
-                        };
+                            string paramType = GetGlobalType(semanticModel, p.Type, className);
+                            string paramName = GetSafeParameterName(p.Name);
 
-                        return $"{attributeStr}{modifiers} {paramType} {paramName}{defaultValue}".Trim();
-                    }));
+                            ImmutableArray<AttributeData> attributes = p.GetAttributes();
+                            AttributeData? maybeNullWhenAttr = attributes.FirstOrDefault(a =>
+                                a.AttributeClass?.Name is "MaybeNullWhenAttribute" or "MaybeNullWhen");
 
-                sourceBuilder.AppendLine($"    {returnType} {method.Name}{typeParameters}({parameters}){constraints};");
+                            string attributeStr = "";
+                            if (maybeNullWhenAttr != null)
+                            {
+                                object? value = maybeNullWhenAttr.ConstructorArguments.FirstOrDefault().Value;
+                                string valueStr = value?.ToString().ToLower() ?? "false";
+                                attributeStr = $"[global::System.Diagnostics.CodeAnalysis.MaybeNullWhen({valueStr})] ";
+                            }
+
+                            string defaultValue = p.HasExplicitDefaultValue
+                                ? $" = {p.ExplicitDefaultValue}"
+                                : "";
+
+                            string modifiers = p.RefKind switch
+                            {
+                                RefKind.Out => "out",
+                                RefKind.Ref => "ref",
+                                RefKind.In  => "in",
+                                _           => ""
+                            };
+
+                            return $"{attributeStr}{modifiers} {paramType} {paramName}{defaultValue}".Trim();
+                        }));
+
+                    sourceBuilder.AppendLine($"    {returnType} {method.Name}{typeParameters}({parameters}){constraints};");
+                }
             }
-        }
 
-        sourceBuilder.AppendLine("}");
+            sourceBuilder.AppendLine("}");
+        }
+        catch (Exception e)
+        {
+            // GeneratorLogging.LogMessage($"[-] Error in GenerateInterface: {e.Message}", LoggingLevel.Error);
+            throw;
+        }
     }
 
     private static string GetTypeParameterConstraints(ITypeParameterSymbol typeParameter)
     {
-        List<string> constraints = [];
+        List<string> constraints = new();
 
         if (typeParameter.HasReferenceTypeConstraint)
         {
@@ -452,7 +528,7 @@ namespace {Namespace}
 
         if (typeSymbol.ContainingType != null)
         {
-            List<string> typePathParts = [];
+            List<string> typePathParts = new();
             INamedTypeSymbol? currentType = typeSymbol.ContainingType;
 
             typePathParts.Add(typeSymbol.Name);

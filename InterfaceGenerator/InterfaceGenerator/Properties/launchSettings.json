@@ -3,7 +3,7 @@
   "profiles": {
     "DebugRoslynSourceGenerator": {
       "commandName": "DebugRoslynComponent",
-      "targetProject": "../InterfaceGenerator.Sample/InterfaceGenerator.Sample.csproj"
+      "targetProject": "D:/sliced/src/godot/sliced.csproj"
     }
   }
 }
