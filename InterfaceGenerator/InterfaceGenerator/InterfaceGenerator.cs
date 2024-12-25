@@ -13,7 +13,7 @@ namespace InterfaceGenerator;
 #pragma warning disable RS1038
 [Generator(LanguageNames.CSharp)]
 #pragma warning restore RS1038
-public class InterfaceIncrementalGenerator : IIncrementalGenerator
+public class InterfaceGenerator : IIncrementalGenerator
 {
     private const string Namespace = "InterfaceGenerator.Attributes";
     private const string GenerateInterfaceAttributeName = "GenerateInterfaceAttribute";

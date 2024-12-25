@@ -174,7 +174,7 @@ public static class TestHelper
             [syntaxTree],
             References);
 
-        InterfaceIncrementalGenerator generator = new();
+        InterfaceGenerator generator = new();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
 
         driver = driver.RunGenerators(compilation);
