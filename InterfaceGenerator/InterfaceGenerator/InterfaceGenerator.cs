@@ -104,7 +104,9 @@ namespace {Namespace}
             .CreateSyntaxProvider(
                 static (s, _) => IsSyntaxTargetForGeneration(s),
                 static (ctx, _) => GetTypeForGeneration(ctx))
-            .Where(static m => m is not null)!;
+            .WithTrackingName(TrackingNames.InitialExtraction)
+            .Where(static m => m is not null)
+            .WithTrackingName(TrackingNames.RemovingNulls)!;
 
         IncrementalValueProvider<(Compilation Compilation, ImmutableArray<TypeDeclarationSyntax> Types)> compilationAndTypes =
             context.CompilationProvider.Combine(typeDeclarations.Collect());
