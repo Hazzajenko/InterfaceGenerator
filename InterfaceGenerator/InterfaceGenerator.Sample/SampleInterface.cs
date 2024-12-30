@@ -5,6 +5,9 @@ using InterfaceGenerator.Attributes;
 
 namespace InterfaceGenerator.Sample;
 
+[GenerateInterface(typeof(SampleInterface))]
+public partial interface ISampleInterface2;
+
 public partial interface ISampleInterface;
 
 [GenerateInterface]
