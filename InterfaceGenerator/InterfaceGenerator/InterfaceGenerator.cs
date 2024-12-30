@@ -9,9 +9,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace InterfaceGenerator;
 
-#pragma warning disable RS1038
 [Generator(LanguageNames.CSharp)]
-#pragma warning restore RS1038
 public class InterfaceGenerator : IIncrementalGenerator
 {
     private const string Namespace = "InterfaceGenerator.Attributes";
