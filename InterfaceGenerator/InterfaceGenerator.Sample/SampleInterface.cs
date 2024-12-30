@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using InterfaceGenerator.Attributes;
 
 // using InterfaceGenerator.Attributes;
 
@@ -8,7 +9,7 @@ namespace InterfaceGenerator.Sample;
 
 public partial interface ISampleInterface;
 
-// [GenerateInterface]
+[GenerateInterface]
 public class SampleInterface : ISampleInterface
 {
     // Basic property cases

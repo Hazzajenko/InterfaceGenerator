@@ -6,8 +6,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InterfaceGenerator.Sample",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InterfaceGenerator.Tests", "InterfaceGenerator\InterfaceGenerator.Tests\InterfaceGenerator.Tests.csproj", "{A015A490-F773-4C2C-89B8-BC4486D7F7C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InterfaceGenerator.Shared", "InterfaceGenerator.Shared\InterfaceGenerator.Shared.csproj", "{7F7DAAA5-92A8-4B49-AA26-701B1103E004}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +24,5 @@ Global
 		{A015A490-F773-4C2C-89B8-BC4486D7F7C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A015A490-F773-4C2C-89B8-BC4486D7F7C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A015A490-F773-4C2C-89B8-BC4486D7F7C2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F7DAAA5-92A8-4B49-AA26-701B1103E004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F7DAAA5-92A8-4B49-AA26-701B1103E004}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F7DAAA5-92A8-4B49-AA26-701B1103E004}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F7DAAA5-92A8-4B49-AA26-701B1103E004}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

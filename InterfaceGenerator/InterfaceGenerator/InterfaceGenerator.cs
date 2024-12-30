@@ -25,12 +25,12 @@ using System;
 namespace {Namespace}
 {{
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public sealed partial class {GenerateInterfaceAttributeName} : System.Attribute
+    public sealed class {GenerateInterfaceAttributeName} : System.Attribute
     {{
     }}
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-    public sealed partial class {GenerateIgnoreAttributeName} : Attribute
+    public sealed class {GenerateIgnoreAttributeName} : Attribute
     {{
     }}
 }}";
