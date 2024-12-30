@@ -60,6 +60,7 @@ public partial interface IMyClass;
 ```
 
 This approach is useful when you want to:
+
 - Generate multiple interfaces from the same class
 - Keep the class implementation clean of generator attributes
 - Follow an interface-first design approach
@@ -151,6 +152,15 @@ public partial interface IMyClass
 - Tuple return types
 - Full qualification of system types with `global::`
 - Members marked with `[GenerateIgnore]` are excluded
+
+## TODO
+
+- Create and publish NuGet package
+  - Add installation instructions to README
+- Complete unit tests for source generator
+  - Test different class/interface scenarios
+  - Test edge cases and error conditions
+  - Add test coverage reporting
 
 ## Contributing
 
