@@ -23,6 +23,10 @@ The Interface Generator automatically creates interfaces from classes with compr
 
 ### Basic Usage
 
+There are two ways to use the Interface Generator:
+
+#### 1. Class-First Approach
+
 1. Add the namespace for the generator attributes:
 
 ```csharp
@@ -46,7 +50,19 @@ public class MyClass : IMyClass
 }
 ```
 
-The generator will automatically create the interface implementation with all public members.
+#### 2. Interface-First Approach
+
+Alternatively, you can specify the target class directly on the interface:
+
+```csharp
+[GenerateInterface(typeof(MyClass))]
+public partial interface IMyClass;
+```
+
+This approach is useful when you want to:
+- Generate multiple interfaces from the same class
+- Keep the class implementation clean of generator attributes
+- Follow an interface-first design approach
 
 ### Ignoring Members
 
@@ -65,16 +81,19 @@ public class MyClass : IMyClass
 
 ### Example
 
-#### Before (Your Input Class)
+#### Before (Your Input)
 
 ```csharp
 using InterfaceGenerator.Attributes;
 
 namespace Example;
 
-public partial interface IMyClass;
+// You can use either approach:
+public partial interface IMyClass;                         // Class-first approach
+// [GenerateInterface(typeof(MyClass))]                   // Interface-first approach
+// public partial interface IMyClass;
 
-[GenerateInterface]
+[GenerateInterface]  // Only needed for class-first approach
 public class MyClass : IMyClass
 {
     public string Name { get; set; }
@@ -123,7 +142,9 @@ public partial interface IMyClass
 
 ### Key Features Demonstrated
 
-- Automatic interface generation with `[GenerateInterface]` attribute
+- Two approaches to interface generation:
+  - Class-first with `[GenerateInterface]` attribute on the class
+  - Interface-first with `[GenerateInterface(typeof(TargetClass))]` on the interface
 - Property accessors preserved (get/set, get-only)
 - Nullable reference types supported
 - Generic methods with constraints
