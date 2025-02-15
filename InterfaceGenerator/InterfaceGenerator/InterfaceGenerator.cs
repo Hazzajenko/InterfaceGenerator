@@ -261,7 +261,7 @@ namespace {Namespace}
                             a.AttributeClass?.Name is "MaybeNullWhenAttribute" or "MaybeNullWhen");
 
                         string attributeStr = "";
-                        if (maybeNullWhenAttr != null)
+                        if (maybeNullWhenAttr is not null)
                         {
                             object? value = maybeNullWhenAttr.ConstructorArguments.FirstOrDefault().Value;
                             string valueStr = value?.ToString().ToLower() ?? "false";
@@ -389,14 +389,14 @@ namespace {Namespace}
             return $"global::{baseName}<{typeArgs}>";
         }
 
-        if (typeSymbol.ContainingType != null)
+        if (typeSymbol.ContainingType is not null)
         {
             List<string> typePathParts = new();
             INamedTypeSymbol? currentType = typeSymbol.ContainingType;
 
             typePathParts.Add(typeSymbol.Name);
 
-            while (currentType != null)
+            while (currentType is not null)
             {
                 typePathParts.Add(currentType.Name);
                 currentType = currentType.ContainingType;
@@ -454,7 +454,7 @@ namespace {Namespace}
         string namespaceName = string.Empty;
         SyntaxNode? potentialNamespaceParent = typeDeclaration.Parent;
 
-        while (potentialNamespaceParent != null                           &&
+        while (potentialNamespaceParent is not null                       &&
                potentialNamespaceParent is not NamespaceDeclarationSyntax &&
                potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax)
         {
