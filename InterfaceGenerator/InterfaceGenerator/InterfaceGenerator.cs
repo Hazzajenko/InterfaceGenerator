@@ -228,7 +228,18 @@ namespace {Namespace}
                     accessors += "set; ";
                 }
 
-                sourceBuilder.AppendLine($"    {typeWithGlobal} {property2.Name} {{ {accessors}}}");
+                // Check if the property returns by reference
+                string refModifier = "";
+                if (property2.ReturnsByRef)
+                {
+                    refModifier = "ref ";
+                }
+                else if (property2.ReturnsByRefReadonly)
+                {
+                    refModifier = "ref readonly ";
+                }
+
+                sourceBuilder.AppendLine($"    {refModifier}{typeWithGlobal} {property2.Name} {{ {accessors}}}");
             }
             else if (member is IMethodSymbol method)
             {
